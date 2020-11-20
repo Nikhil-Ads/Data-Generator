@@ -43,6 +43,20 @@ dependencies {
     compile group:'org.springframework.boot' , name:'spring-boot-starter-actuator', version:'2.0.5.RELEASE'
 	compile group:'org.springframework.boot' , name:'spring-boot-starter-web', version:'2.0.5.RELEASE'
 	compile group:'org.springframework.boot' , name:'spring-boot-devtools', version:'2.0.5.RELEASE'
+	
+	// https://mvnrepository.com/artifact/org.projectlombok/lombok
+	compile group: 'org.projectlombok', name: 'lombok', version: '1.18.16'
+	
+	// https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
+	compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.11'
+	// https://mvnrepository.com/artifact/org.apache.httpcomponents/httpcore
+	compile group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.13'
+	// https://mvnrepository.com/artifact/commons-logging/commons-logging
+	compile group: 'commons-logging', name: 'commons-logging', version: '1.2'
+	// https://mvnrepository.com/artifact/commons-codec/commons-codec
+	compile group: 'commons-codec', name: 'commons-codec', version: '1.13'
+		
+	
     
     compile group: 'org.json', name: 'json', version: '20180813'
     

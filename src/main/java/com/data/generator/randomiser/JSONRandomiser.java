@@ -11,6 +11,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.data.generator.controller.ExceptionThrower;
 import com.data.generator.models.Patterns;
 import com.data.generator.utility.KeyGenerator;
 
@@ -19,7 +20,7 @@ import com.data.generator.utility.KeyGenerator;
  *
  */
 @Component
-public class JSONRandomiser implements Randomiser {
+public class JSONRandomiser extends ExceptionThrower implements Randomiser {
 
 	private JSONObject json;
 	
@@ -74,9 +75,18 @@ public class JSONRandomiser implements Randomiser {
 					Object V=null;
 					String value= propertyPattern.getValue();
 					if(value.matches("%GEN%.+")) {
-						JSONObject json = new JSONObject(value.substring(5));
+						value = value.substring(5);
+						
+						String type = new String();
+						if(value.contains("%")) {
+							String[] typePair = value.split("%");
+							type = typePair[0];
+							value = typePair[1];
+						}
+							
+						JSONObject json = new JSONObject(value);
 						System.out.println(json.toString());
-						if(json.has("format")){
+						if(type.equalsIgnoreCase("date") || json.has("format")){
 								String format = json.getString("format");
 								if(isDateFormat(format)) {							
 									long lowerLimit = json.has("min") ? json.getLong("min") : 0;
@@ -85,9 +95,9 @@ public class JSONRandomiser implements Randomiser {
 						            long random = (long) (Math.random() * difference);
 					        	    V=formatDate(new Date(lowerLimit + random), json.getString("format"));				        	    
 								}
-						}else if(json.has("example") && isTime(Long.valueOf(json.get("example").toString()))) {						
+						}else if(type.equalsIgnoreCase("time") || (json.has("example") && isTime(Long.valueOf(json.get("example").toString())))) {						
 							V=json.has("format") ?  formatDate(new Date(), json.getString("format")) : new Date().getTime();
-						}else if(json.has("example") && isNumberFormat(json.get("example").toString())) {
+						}else if(type.equalsIgnoreCase("number") || (json.has("example") && isNumberFormat(json.get("example").toString()))) {
 							if(json.has("min") && json.has("max")) {
 								int min = json.getInt("min");
 								int max = json.getInt("max");									
@@ -100,11 +110,11 @@ public class JSONRandomiser implements Randomiser {
 								V=generator.generateKey(length, new int[] {KeyGenerator.NUMERIC});
 							}
 							V = Long.parseLong(V.toString());
-						}else if(json.has("values")) {
+						}else if(type.equalsIgnoreCase("options") || (json.has("values"))) {
 							//Array for Values
 							JSONArray array=json.getJSONArray("values");
 							V=array.getString((int)(Math.random() * array.length()));												
-						}
+						}else throwPropertiesNotFoundException();						
 					}else if(value.equalsIgnoreCase("%GEN%")) {
 						V=generator.generateKey(10, 20, new int[] {KeyGenerator.ALPHA_NUMERIC});
 					}					
