@@ -75,49 +75,58 @@ public class JSONRandomiser extends ExceptionThrower implements Randomiser {
 					Object V=null;
 					String value= propertyPattern.getValue();
 					if(value.matches("%GEN%.+")) {
-						value = value.substring(5);
-						
-						String type = new String();
-						if(value.contains("%")) {
-							String[] typePair = value.split("%");
-							type = typePair[0];
-							value = typePair[1];
-						}
+							value = value.substring(5);
 							
-						JSONObject json = new JSONObject(value);
-						System.out.println(json.toString());
-						if(type.equalsIgnoreCase("date") || json.has("format")){
-								String format = json.getString("format");
-								if(isDateFormat(format)) {							
-									long lowerLimit = json.has("min") ? json.getLong("min") : 0;
-									long upperLimit = new Date().getTime();
-									long difference = upperLimit - lowerLimit; 	        								
-						            long random = (long) (Math.random() * difference);
-					        	    V=formatDate(new Date(lowerLimit + random), json.getString("format"));				        	    
-								}
-						}else if(type.equalsIgnoreCase("time") || (json.has("example") && isTime(Long.valueOf(json.get("example").toString())))) {						
-							V=json.has("format") ?  formatDate(new Date(), json.getString("format")) : new Date().getTime();
-						}else if(type.equalsIgnoreCase("number") || (json.has("example") && isNumberFormat(json.get("example").toString()))) {
-							if(json.has("min") && json.has("max")) {
-								int min = json.getInt("min");
-								int max = json.getInt("max");									
-								V=generator.generateKey(min, max, new int[] {KeyGenerator.NUMERIC});
-							}else if(json.has("length")) {
-								int length = json.getInt("length");
-								V=generator.generateKey(length, new int[] {KeyGenerator.NUMERIC});
-							}else {
-								int length = json.get("example").toString().length();
-								V=generator.generateKey(length, new int[] {KeyGenerator.NUMERIC});
+							String type = new String();
+							if(value.contains("%")) {
+								String[] typePair = value.split("%");
+								type = typePair[0];
+								value= typePair.length ==2 ? typePair[1] : "{}";
 							}
-							V = Long.parseLong(V.toString());
-						}else if(type.equalsIgnoreCase("options") || (json.has("values"))) {
-							//Array for Values
-							JSONArray array=json.getJSONArray("values");
-							V=array.getString((int)(Math.random() * array.length()));												
-						}else throwPropertiesNotFoundException();						
-					}else if(value.equalsIgnoreCase("%GEN%")) {
-						V=generator.generateKey(10, 20, new int[] {KeyGenerator.ALPHA_NUMERIC});
-					}					
+								
+							JSONObject json = new JSONObject(value);
+							if(json.has("format")){
+									String format = json.getString("format");
+									if(isDateFormat(format)) {	
+										long lowerLimit = json.has("min") ? (isDate(json.get("min").toString())? getDate(json.getString("min")) :json.getLong("min")) : 0;
+										long upperLimit = json.has("max") ? (isDate(json.get("max").toString())? getDate(json.getString("max")) :json.getLong("max")) : new Date().getTime();
+										long difference = upperLimit - lowerLimit; 	        								
+							            long random = (long) (Math.random() * difference);
+						        	    V=formatDate(new Date(lowerLimit + random), format);				        	    
+									}
+							}else if(type.equalsIgnoreCase("date")) {
+								long lowerLimit = json.has("min") ? (isDate(json.get("min").toString())? getDate(json.getString("min")) :json.getLong("min")) : 0;
+								long upperLimit = json.has("max") ? (isDate(json.get("max").toString())? getDate(json.getString("max")) :json.getLong("max")) : new Date().getTime();
+								long difference = upperLimit - lowerLimit; 	        								
+					            long random = (long) (Math.random() * difference);
+				        	    V=new Date(lowerLimit + random);							
+							}else if(type.equalsIgnoreCase("time") || (json.has("example") && isTime(Long.valueOf(json.get("example").toString())))) {
+								long lowerLimit = json.has("min") ? (isDate(json.get("min").toString())? getDate(json.getString("min")) :json.getLong("min")) : 0;
+								long upperLimit = json.has("max") ? (isDate(json.get("max").toString())? getDate(json.getString("max")) :json.getLong("max")) : new Date().getTime();
+								long difference = upperLimit - lowerLimit; 	        								
+					            long random = (long) (Math.random() * difference);				            
+								V=json.has("format") ?  formatDate(new Date(random), json.getString("format")) : new Date(random).getTime();
+							}else if(type.equalsIgnoreCase("number") || (json.has("example") && isNumberFormat(json.get("example").toString()))) {
+								if(json.has("min") && json.has("max")) {
+									int min = json.getInt("min");
+									int max = json.getInt("max");									
+									V=generator.generateKey(min, max, new int[] {KeyGenerator.NUMERIC});
+								}else if(json.has("length")) {
+									int length = json.getInt("length");
+									V=generator.generateKey(length, new int[] {KeyGenerator.NUMERIC});
+								}else {
+									int length = json.has("example") ? json.get("example").toString().length() : 5;
+									V=generator.generateKey(length, new int[] {KeyGenerator.NUMERIC});
+								}
+								V = Long.parseLong(V.toString());
+							}else if((json.has("values"))) {
+								//Array for Values
+								JSONArray array=json.getJSONArray("values");
+								V=array.get((int)(Math.random() * array.length()));												
+							}else throwPropertiesNotFoundException();						
+					}else if(value.equalsIgnoreCase("%GEN%")) 
+							V=generator.generateKey(10, 20, new int[] {KeyGenerator.ALPHA_NUMERIC});
+					 else 	V=value;				
 					jsonObject.put(propertyPattern.getKey(), V);	
 				}
 				jsonArr.put(jsonObject);
@@ -125,6 +134,17 @@ public class JSONRandomiser extends ExceptionThrower implements Randomiser {
 		else throw new Exception("Patterns must be set for Randomisation of data");
 		return jsonArr.toString();
 	}
+	
+//	private Long getDate(String key, JSONObject json, long defaultValue) {
+//		Long result=null;
+//		if(json.has(key)) {
+//				if(isReference(key, json.toMap())) {
+//						if(json.has(key.substring(1,ke)))
+//				}else if()
+//				}
+//		else 	result=defaultValue;
+//		return result;
+//	}
 
 	
 	

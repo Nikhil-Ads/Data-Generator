@@ -2,13 +2,11 @@ package com.data.generator.controller;
 
 import javax.validation.constraints.NotEmpty;
 
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,16 +30,15 @@ public class DataGeneratorController {
 	}
 	
 	@GetMapping
-	@RequestMapping(method=RequestMethod.GET ,path = "/template", produces ="application/json", consumes = "application/json")
+	@RequestMapping(method=RequestMethod.GET ,path = "/template", produces = "text/plain", consumes = "application/json")
 	public ResponseEntity<String> getTemplate(
 			@NonNull
 			@NotEmpty(message = "Request Body cannot be empty")
 			@RequestBody String object){
-		return new ResponseEntity<String>(new JSONObject(templateGenerator.getPropertiesFromExample(object, null, null)).toString(),HttpStatus.CREATED);
+		return new ResponseEntity<String>(templateGenerator.getPropertiesFromExample(object, null, null),HttpStatus.CREATED);
 	}
 	
-	@GetMapping
-	@RequestMapping("/randomise")
+	@GetMapping(path = "/randomise", produces = "application/json", consumes = "application/json")
 	public ResponseEntity<String> getRandomisedData(
 			@RequestHeader(name = "count",required = false,defaultValue = "1")
 			Integer count,			

@@ -1,6 +1,5 @@
 package com.data.generator.templates;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.json.JSONObject;
@@ -14,6 +13,8 @@ public class JSONTemplateGenerator implements TemplateGenerator {
 	private JSONObject json;
 	
 	private Patterns patterns;
+	
+	private String properties;
 	
 	private static final String 	   SEPARATOR = new String(",");
 	private static final String	   	   DELIMITER = new String(":");
@@ -48,13 +49,25 @@ public class JSONTemplateGenerator implements TemplateGenerator {
 	}
 
 	@Override
-	public Map<String, String> getPropertiesFromExample(String example, String propertiesSeparator, String delimiter) {
-		Map<String, String> properties=new HashMap<>();
+	public String getPropertiesFromExample(String example, String propertiesSeparator, String delimiter) {
+		properties=new String("{\r\n");
 		json = new JSONObject(example);
-		json.toMap().forEach((K,V) -> { patterns.getPatterns().put(K,V.toString());
-										properties.put(K, String.format("{{%s}}", K));
+		json.toMap().forEach((K,V) -> { 
+										patterns.getPatterns().put(K,V.toString());
+										if(V.toString().matches("%GEN%.+"))
+											{String value = V.toString().substring(5);
+											 
+											String type = new String();
+											if(value.contains("%")) 
+												type = value.split("%")[0];
+											
+											if(type.equalsIgnoreCase("time") || type.equalsIgnoreCase("number"))
+													properties+=String.format("\"%s\" : {{%s}},\r\n", K, K);
+											else	properties+=String.format("\"%s\" : \"{{%s}}\",\r\n", K,K);
+											}									
 									   });
-		return properties;
+		properties=properties.substring(0,properties.length()-3)+"\r\n}";
+		return properties.toString();
 	}
 
 	/**
