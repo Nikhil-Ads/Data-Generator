@@ -1,6 +1,6 @@
 package com.data.generator.models;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class Patterns {
@@ -8,7 +8,7 @@ public class Patterns {
 	private Map<String, String> patterns;
 	
 	public Patterns() {
-		patterns =new HashMap<>();
+		patterns =new LinkedHashMap<>();
 	}
 
 	/**

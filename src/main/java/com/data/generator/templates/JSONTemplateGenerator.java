@@ -50,11 +50,17 @@ public class JSONTemplateGenerator implements TemplateGenerator {
 
 	@Override
 	public String getPropertiesFromExample(String example, String propertiesSeparator, String delimiter) {
+		if(patterns == null)
+			patterns=new Patterns();
+		
+		patterns.getPatterns().clear();
 		properties=new String("{\r\n");
 		json = new JSONObject(example);
 		json.toMap().forEach((K,V) -> { 
-										patterns.getPatterns().put(K,V.toString());
-										if(V.toString().matches("%GEN%.+"))
+										patterns.getPatterns().put(K,V != null ? V.toString() : null);
+										if(V == null)
+											 properties+=String.format("\"%s\" : %s", K, null);
+										else if(V != null && V.toString().matches("%GEN%.+"))
 											{String value = V.toString().substring(5);
 											 
 											String type = new String();
@@ -65,6 +71,7 @@ public class JSONTemplateGenerator implements TemplateGenerator {
 													properties+=String.format("\"%s\" : {{%s}},\r\n", K, K);
 											else	properties+=String.format("\"%s\" : \"{{%s}}\",\r\n", K,K);
 											}									
+										else	properties+=String.format("\"%s\" : \"{{%s}}\",\r\n", K,K);
 									   });
 		properties=properties.substring(0,properties.length()-3)+"\r\n}";
 		return properties.toString();

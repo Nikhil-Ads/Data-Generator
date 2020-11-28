@@ -45,11 +45,16 @@ public class DataGeneratorController {
 			@NonNull
 			@NotEmpty(message = "Request Body cannot be empty")
 			@RequestBody String object) throws Exception{
+		try {
 		if(object == null || (object != null && object.isEmpty()))
 			throw new Exception("Request Body cannot be empty");
 		templateGenerator.getPropertiesFromExample(object, null, null);
 		randomiser.setPattern(templateGenerator.getPatterns());
 		return new ResponseEntity<String>(randomiser.randomiseData(count),HttpStatus.CREATED);
+		}catch(Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 }

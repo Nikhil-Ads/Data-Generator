@@ -32,7 +32,15 @@ public interface Randomiser {
 			return false;
 		}
 	}
-	
+
+	default boolean isNumber(String number) {
+		try { Double.parseDouble(number);
+			  return true;			
+		}catch(NumberFormatException e) {
+			  LOGGER.debug(e.getMessage());
+			  return false;
+		}
+	}
 	default boolean isNumberFormat(String pattern) {
 		try {NumberFormat.getNumberInstance().parse(pattern);
 			 return true;
@@ -54,6 +62,21 @@ public interface Randomiser {
 		}
 	}
 	
+	default boolean isRefExpression(String key) {
+		int difference = key.length() - key.replaceAll("[$]", "").length();
+		LOGGER.debug("Key passed to check reference: "+key);
+		LOGGER.debug("Difference: "+difference);
+		if((difference / 2 > 0) && (difference % 2 == 0))
+				return true;
+		else	return false;
+	}
+	
+	default boolean isReference(String key){
+		if(key.startsWith("$") && key.endsWith("$"))
+		      return true;
+		else  return false; 
+	}
+	
 	default String formatDate(Date date, String format) {
 		return new SimpleDateFormat(format).format(date);
 	}
@@ -62,14 +85,18 @@ public interface Randomiser {
 		return new SimpleDateFormat("dd-MM-yyyy hh:mm:ss").parse(date).getTime();
 	}
 	
-	default boolean isReference(String key, Map<String, Object> map){
-		if(key.startsWith("$") && key.endsWith("$") && map.containsKey(key.substring(1, key.length()-1)))
-		      return true;
-		else  return false; 
+	default long getDate(String date,String format) throws ParseException{
+		return new SimpleDateFormat(format).parse(date).getTime();
 	}
 
+	default <K,V> Map.Entry<K, V> getMapEntry(Map<K,V> map, K key){
+		for(Map.Entry<K, V> entry: map.entrySet())
+			if(entry.getKey().equals(key))
+				return entry;
+		return null;
+	}
+	
 	String randomiseData(int count) throws Exception;
 	
 	public void setPattern(Patterns patterns);
-
 }
