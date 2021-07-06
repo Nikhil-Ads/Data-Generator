@@ -27,7 +27,7 @@ import com.data.generator.utility.KeyGenerator;
 @Component
 public class JSONRandomiser extends ExceptionThrower implements Randomiser {
 
-	private JSONObject json;
+	private JSONObject json, selectedProfile;
 	
 	private Patterns pattern;
 	
@@ -71,25 +71,33 @@ public class JSONRandomiser extends ExceptionThrower implements Randomiser {
 	}
 	
 	@Override
-	public String randomiseData(int count) throws Exception {
+	public String randomiseData(int count,Integer uniqueCount) throws Exception {
 		JSONArray jsonArr= new JSONArray();
-		if(pattern != null)
+		if(pattern != null) {
+				JSONArray profiles = pattern.getProfiles();
+				LOGGER.debug("Found Profiles: "+profiles.toString());
+				LOGGER.debug("Unique Count passed: "+uniqueCount);
+
 				for(int i=1; i <= count; i++) {
+					if(uniqueCount > 0  && profiles.length() == uniqueCount)
+						selectedProfile = profiles.getJSONObject((int)(Math.random() * profiles.length()));	
 					JSONObject jsonObject=new JSONObject();
 					for(Map.Entry<String, String> propertyPattern : pattern.getPatterns().entrySet()) {
 						Object V=getRandomData(propertyPattern, jsonObject);				
 						jsonObject.put(propertyPattern.getKey(), V);	
 					}
 					jsonArr.put(jsonObject);
+					if(profiles.length() < uniqueCount)
+						profiles.put(jsonObject);
+					selectedProfile=null;
 				}
-		else 	throw new Exception("Patterns must be set for Randomisation of data");
-		return jsonArr.toString();
+		}else 	throw new Exception("Patterns must be set for Randomisation of data");
+		return 	jsonArr.toString();
 	}
 	
 	@SuppressWarnings("deprecation")
 	private Long getDate(String key, JSONObject json, long defaultValue, JSONObject container) throws JSONException, GeneratorException, ParseException {
 		Long result=null;
-		try {
 		if(json.has(key)) {
 				if(isRefExpression(json.get(key).toString())) {
 //						System.out.println("Evaluate");
@@ -125,13 +133,9 @@ public class JSONRandomiser extends ExceptionThrower implements Randomiser {
 						result=getDate(json.getString(key));
 				 else	result=json.getLong(key); 
 		}else 	result=defaultValue;
-		}catch(Exception e) {
-			e.printStackTrace();
-		}
 		return result;
 	}
 	
-	@SuppressWarnings("deprecation")
 	private Object getRandomData(Map.Entry<String, String> propertyPattern, JSONObject jsonObject) throws GeneratorException, JSONException, ParseException {
 		Object V=null;
 		String value= propertyPattern.getValue();
@@ -147,76 +151,30 @@ public class JSONRandomiser extends ExceptionThrower implements Randomiser {
 						}
 							
 						JSONObject json = new JSONObject(value);
-						if(type.equalsIgnoreCase("date") && json.has("format")){
-								String format = json.getString("format");
-								if(isDateFormat(format)) {	
-									long lowerLimit = getDate("min", json, 0, jsonObject);
-									long upperLimit = getDate("max", json, new Date().getTime(), jsonObject);
-									long difference = getDate("maxDiff", json, upperLimit - lowerLimit, jsonObject); 	        								
-						            long random = (long) (Math.random() * difference);
-					        	    V=formatDate(new Date(lowerLimit + random), format);				        	    
-								}
-						}else if(type.equalsIgnoreCase("date")) {
-//							System.out.println("JSON: "+json);
-							long lowerLimit = getDate("min", json, 0, jsonObject);
-							long upperLimit = getDate("max", json, new Date().getTime(), jsonObject);
-							long difference = getDate("maxDiff", json, upperLimit - lowerLimit, jsonObject); 	        								
-				            long random = (long) (Math.random() * difference);
-			        	    V=new Date(lowerLimit + random).toGMTString();
-//			        	    System.out.println(V);
-						}else if(type.equalsIgnoreCase("time") || (json.has("example") && isTime(Long.valueOf(json.get("example").toString())))) {
-							long lowerLimit = getDate("min", json, 0, jsonObject);
-							long upperLimit = getDate("max", json, new Date().getTime(), jsonObject);
-							long difference = getDate("maxDiff", json, upperLimit - lowerLimit, jsonObject); 	        								
-				            long random = (long) (Math.random() * difference);				            
-							V=json.has("format") ?  formatDate(new Date(random), json.getString("format")) : new Date(random).getTime();
-						}else if(type.equalsIgnoreCase("now")) {
-							V=json.has("format") ?  (json.getString("format").equals("S") ? new Date().getTime() : formatDate(new Date(), json.getString("format"))) : new Date().toGMTString();
-						}else if(type.equalsIgnoreCase("number") || (json.has("example") && isNumberFormat(json.get("example").toString()))) {
-							if(json.has("min") && json.has("max")) {
-								int min = json.getInt("min");
-								int max = json.getInt("max");									
-								V=generator.generateKey(min, max, new int[] {KeyGenerator.NUMERIC});
-							}else if(json.has("length")) {
-								int length = json.getInt("length");
-								V=generator.generateKey(length, new int[] {KeyGenerator.NUMERIC});
-							}else {
-								int length = json.has("example") ? json.get("example").toString().length() : 5;
-								V=generator.generateKey(length, new int[] {KeyGenerator.NUMERIC});
-							}
-							V = Long.parseLong(V.toString());
-						}else if(type.equalsIgnoreCase("string") || (json.has("example") && isNumberFormat(json.get("example").toString()))) {
-							if(json.has("min") && json.has("max")) {
-								int min = json.getInt("min");
-								int max = json.getInt("max");									
-								V=generator.generateKey(min, max, new int[] {KeyGenerator.ALPHA_NUMERIC});
-							}else if(json.has("length")) {
-								int length = json.getInt("length");
-								V=generator.generateKey(length, new int[] {KeyGenerator.ALPHA_NUMERIC});
-							}else {
-								int length = json.has("example") ? json.get("example").toString().length() : 5;
-								V=generator.generateKey(length, new int[] {KeyGenerator.ALPHA_NUMERIC});
-							}
-						}else if(type.equalsIgnoreCase("email") || (json.has("example") && isNumberFormat(json.get("example").toString()))) {
-							List<String> domains = getDomains(json, "domain");
-							if(json.has("min") && json.has("max")) {
-								int min = json.getInt("min");
-								int max = json.getInt("max");									
-								V=generator.generateKey(min, max, new int[] {KeyGenerator.ALPHA_NUMERIC}) +"@"+ domains.get((int)(Math.random() * domains.size()));
-							}else if(json.has("length")) {
-								int length = json.getInt("length");
-								V=generator.generateKey(length, new int[] {KeyGenerator.ALPHA_NUMERIC});
-							}else {
-								int length = json.has("example") ? json.get("example").toString().length() : 5;
-								V=generator.generateKey(length, new int[] {KeyGenerator.ALPHA_NUMERIC});
-							}
-						}else if((json.has("values"))) {
-							//Array for Values
-							JSONArray array=json.getJSONArray("values");
-							V=array.get((int)(Math.random() * array.length()));												
-						}else if(type.equalsIgnoreCase("expression") && (json.has("expression") && isRefExpression(json.getString("expression")))) {
-							V = evaluateExpression(json.getString("expression"), jsonObject);
-						}else throwPropertiesNotFoundException();						
+						
+						if(json.has("alwaysNew") && !json.getBoolean("alwaysNew") && selectedProfile != null) {
+							V = selectedProfile.has(propertyPattern.getKey()) ? selectedProfile.get(propertyPattern.getKey()) : null;
+						}else {
+							if(type.equalsIgnoreCase("date") && json.has("format"))
+								V = generateDateString(json, jsonObject);
+							else if(type.equalsIgnoreCase("date")) 
+								V = generateDate(json, jsonObject);
+							else if(type.equalsIgnoreCase("time") || (json.has("example") && isTime(Long.valueOf(json.get("example").toString()))))
+								V = generateTime(json, jsonObject);
+							else if(type.equalsIgnoreCase("now")) 
+								V = generateNow(json);
+							else if(type.equalsIgnoreCase("number") || (json.has("example") && isNumberFormat(json.get("example").toString()))) 
+								V = generateNumber(json);
+							else if(type.equalsIgnoreCase("string") || (json.has("example") && isNumberFormat(json.get("example").toString()))) 
+								V = generateString(json);
+							else if(type.equalsIgnoreCase("email") || (json.has("example") && isNumberFormat(json.get("example").toString()))) 
+								V = generateEmail(json);
+							else if((json.has("values"))) 
+								V = generateFromValues(json);												
+							else if(type.equalsIgnoreCase("expression") && (json.has("expression") && isRefExpression(json.getString("expression"))))
+								V = evaluateExpression(json.getString("expression"), jsonObject);
+							else throwPropertiesNotFoundException();
+						}
 				}else if(value.equalsIgnoreCase("%GEN%")) { 
 						V=generator.generateKey(25, 30, new int[] {KeyGenerator.ALPHA_NUMERIC});}
 				 else 	V=value;}
@@ -226,11 +184,11 @@ public class JSONRandomiser extends ExceptionThrower implements Randomiser {
 	private Object evaluateExpression(String key, JSONObject container) throws JSONException, GeneratorException, ParseException {
 			Object V=null;
 			if(key.contains(" + ")) {
-					String[] keys = key.split(" [+] ");
-					String leftOp = keys[0].substring(1,keys[0].length()-1);
-					String rightOp= keys[1].substring(1,keys[1].length()-1);
-					if(container.has(leftOp) && container.has(rightOp)) 
-						V=container.getLong(leftOp) + container.getLong(rightOp);						
+				String[] keys = key.split(" [+] ");
+				String leftOp = keys[0].substring(1,keys[0].length()-1);
+				String rightOp= keys[1].substring(1,keys[1].length()-1);
+				if(container.has(leftOp) && container.has(rightOp)) 
+					V=container.getLong(leftOp) + container.getLong(rightOp);						
 			}else if(key.contains(" - ")) {
 				String[] keys = key.split(" [-] ");
 				String leftOp = keys[0].substring(1,keys[0].length()-1);
@@ -293,4 +251,91 @@ public class JSONRandomiser extends ExceptionThrower implements Randomiser {
 		return domains;
 	}
 	
+	private String generateDateString(JSONObject json, JSONObject jsonObject) throws JSONException, GeneratorException, ParseException {
+		String format = json.getString("format");
+		if(isDateFormat(format)) {	
+				long lowerLimit = getDate("min", json, 0, jsonObject);
+				long upperLimit = getDate("max", json, new Date().getTime(), jsonObject);
+				long difference = getDate("maxDiff", json, upperLimit - lowerLimit, jsonObject); 	        								
+	            long random = (long) (Math.random() * difference);
+	    	    return formatDate(new Date(lowerLimit + random), format);				        	    
+		}else 	return null;
+	}
+	
+	@SuppressWarnings("deprecation")
+	private Object generateDate(JSONObject json, JSONObject jsonObject) throws JSONException, GeneratorException, ParseException {
+		long lowerLimit = getDate("min", json, 0, jsonObject);
+		long upperLimit = getDate("max", json, new Date().getTime(), jsonObject);
+		long difference = getDate("maxDiff", json, upperLimit - lowerLimit, jsonObject); 	        								
+        long random = (long) (Math.random() * difference);
+	    return new Date(lowerLimit + random).toGMTString();
+	} 
+	
+	private Object generateTime(JSONObject json, JSONObject jsonObject) throws JSONException, GeneratorException, ParseException {
+		long lowerLimit = getDate("min", json, 0, jsonObject);
+		long upperLimit = getDate("max", json, new Date().getTime(), jsonObject);
+		long difference = getDate("maxDiff", json, upperLimit - lowerLimit, jsonObject); 	        								
+        long random = (long) (Math.random() * difference);				            
+		return json.has("format") ?  formatDate(new Date(random), json.getString("format")) : new Date(random).getTime();
+	}
+	
+	@SuppressWarnings("deprecation")
+	private Object generateNow(JSONObject json) {
+		return json.has("format") ?  (json.getString("format").equals("S") ? new Date().getTime() : formatDate(new Date(), json.getString("format"))) : new Date().toGMTString();
+	}
+	
+	private Long generateNumber(JSONObject json) {
+		String V=null;
+		if(json.has("min") && json.has("max")) {
+			int min = json.getInt("min");
+			int max = json.getInt("max");									
+			V=generator.generateKey(min, max, new int[] {KeyGenerator.NUMERIC});
+		}else if(json.has("length")) {
+			int length = json.getInt("length");
+			V=generator.generateKey(length, new int[] {KeyGenerator.NUMERIC});
+		}else {
+			int length = json.has("example") ? json.get("example").toString().length() : 5;
+			V=generator.generateKey(length, new int[] {KeyGenerator.NUMERIC});
+		}
+		return Long.parseLong(V.toString());
+	}
+	
+	private String generateString(JSONObject json) {
+		String V=null;
+		if(json.has("min") && json.has("max")) {
+			int min = json.getInt("min");
+			int max = json.getInt("max");									
+			V=generator.generateKey(min, max, new int[] {KeyGenerator.ALPHA_NUMERIC});
+		}else if(json.has("length")) {
+			int length = json.getInt("length");
+			V=generator.generateKey(length, new int[] {KeyGenerator.ALPHA_NUMERIC});
+		}else {
+			int length = json.has("example") ? json.get("example").toString().length() : 5;
+			V=generator.generateKey(length, new int[] {KeyGenerator.ALPHA_NUMERIC});
+		}
+		return V;
+	}
+
+	private String generateEmail(JSONObject json) {
+		String V= null;
+		List<String> domains = getDomains(json, "domain");
+		if(json.has("min") && json.has("max")) {
+			int min = json.getInt("min");
+			int max = json.getInt("max");									
+			V=generator.generateKey(min, max, new int[] {KeyGenerator.ALPHA_NUMERIC}) +"@"+ domains.get((int)(Math.random() * domains.size()));
+		}else if(json.has("length")) {
+			int length = json.getInt("length");
+			V=generator.generateKey(length, new int[] {KeyGenerator.ALPHA_NUMERIC});
+		}else {
+			int length = json.has("example") ? json.get("example").toString().length() : 5;
+			V=generator.generateKey(length, new int[] {KeyGenerator.ALPHA_NUMERIC});
+		}
+		return V;
+	}
+	
+	private Object generateFromValues(JSONObject json) {
+		//Array for Values
+		JSONArray array=json.getJSONArray("values");
+		return array.get((int)(Math.random() * array.length()));
+	}
 }

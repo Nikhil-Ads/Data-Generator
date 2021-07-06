@@ -96,7 +96,12 @@ public interface Randomiser {
 		return null;
 	}
 	
-	String randomiseData(int count) throws Exception;
+	String randomiseData(int count, Integer uniqueCount) throws Exception;
 	
 	public void setPattern(Patterns patterns);
+	
+	
+//	public Object generateFromValues(Object...objects);
+	
+	
 }
