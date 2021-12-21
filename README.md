@@ -8,3 +8,10 @@ This project is a low-code application to generate artificial synthesized data i
 3. Generate data for profiles (meaningful randomized data).
 4. Generate dependent data. Data that is dependent on data from other columns.
 5. Provide profiles for generating data for specific profiles.
+
+## Project Specifications:
+
+### Language: Java
+### Framework: Spring
+### Data Format served: JSON
+### Services Served as: APIs
